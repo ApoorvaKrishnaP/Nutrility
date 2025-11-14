@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Density Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FF9A56 0%, #FF7B39 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        
+
+        
+
+        
+        .score-text {
+            font-size: 80px;
+            font-weight: bold;
+            color: white;
+            line-height: 1;
+        }
+
+        .score-label {
+            color: white;
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-top: 10px;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 30px 30px 0 0;
+            padding: 30px 20px;
+            margin-top: 40px;
+        }
+
+        .upload-area {
+            border: 2px dashed #FF7B39;
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #FFF5F0;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            margin: 20px auto;
+            display: none;
+            border-radius: 10px;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #E0E0E0;
+            border-radius: 15px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .predict-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #FF9A56 0%, #FF7B39 100%);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .predict-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-card {
+            background: #FFF5F0;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .density-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: #FF7B39;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .sentiment-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 10px 5px;
+        }
+
+        .positive {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .neutral {
+            background: #FFC107;
+            color: white;
+        }
+
+        .negative {
+            background: #F44336;
+            color: white;
+        }
+
+        .history-section {
+            margin-top: 30px;
+        }
+
+        .history-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-history {
+            font-size: 14px;
+            color: #FF7B39;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .history-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .history-score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FF7B39;
+            margin-right: 10px;
+        }
+
+        .expand-icon {
+            color: #999;
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .history-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #E0E0E0;
+        }
+
+        .history-details.show {
+            display: block;
+        }
+
+        .nutrient-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .nutrient-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            background: #F9F9F9;
+            border-radius: 5px;
+        }
+
+        .nutrient-label {
+            color: #666;
+        }
+
+        .nutrient-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .empty-history {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #F0F0F0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #FF7B39;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+
+        
+
+        
+
+        <div class="upload-section">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('image')">📷 Image</button>
+                <button class="tab" onclick="switchTab('text')">📝 Text</button>
+            </div>
+
+            <div id="imageTab" class="tab-content active">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">Click to upload food label image</div>
+                    <div style="color: #999; font-size: 12px;">PNG, JPG up to 10MB</div>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept="image/*" onchange="handleFileUpload(event)">
+                <img id="previewImage" class="preview-image">
+            </div>
+
+            <div id="textTab" class="tab-content">
+                <div class="text-input" style="padding:0; border:none;">
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                        <div style="flex:1 1 100%;"><label>Meal name<br><input id="meal_name" type="text" placeholder="e.g. Oatmeal" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Caloric Value<br><input id="Caloric_Value" type="number" step="any" placeholder="kcal" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Carbohydrates<br><input id="Carbohydrates" type="number" step="any" placeholder="g" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Sugars<br><input id="Sugars" type="number" step="any" placeholder="g" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Protein<br><input id="Protein" type="number" step="any" placeholder="g" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Dietary Fiber<br><input id="Dietary_Fiber" type="number" step="any" placeholder="g" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Cholesterol<br><input id="Cholesterol" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Sodium<br><input id="Sodium" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Water<br><input id="Water" type="number" step="any" placeholder="g" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin A<br><input id="Vitamin_A" type="number" step="any" placeholder="IU or mcg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin B1<br><input id="Vitamin_B1" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin B11<br><input id="Vitamin_B11" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin B12<br><input id="Vitamin_B12" type="number" step="any" placeholder="mcg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin B2<br><input id="Vitamin_B2" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin B3<br><input id="Vitamin_B3" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin B5<br><input id="Vitamin_B5" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin B6<br><input id="Vitamin_B6" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin C<br><input id="Vitamin_C" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin D<br><input id="Vitamin_D" type="number" step="any" placeholder="mcg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin E<br><input id="Vitamin_E" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Vitamin K<br><input id="Vitamin_K" type="number" step="any" placeholder="mcg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Calcium<br><input id="Calcium" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Copper<br><input id="Copper" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Iron<br><input id="Iron" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Magnesium<br><input id="Magnesium" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Manganese<br><input id="Manganese" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Phosporus<br><input id="Phosporus" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Selenium<br><input id="Selenium" type="number" step="any" placeholder="mcg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                        <div style="flex:1 1 48%;"><label>Zinc<br><input id="Zinc" type="number" step="any" placeholder="mg" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd"></label></div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="predict-btn" onclick="predictNutrition()" id="predictBtn">🔍 Analyze Nutrition Density</button>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-card">
+                    <div class="result-title">Analysis Result</div>
+                    <div class="density-score" id="densityScore">--</div>
+                    <div style="text-align: center;">
+                        <span class="sentiment-badge" id="sentimentBadge">--</span>
+                    </div>
+                    <div style="margin-top: 20px; color: #666; text-align: center;" id="resultDetails">
+                        Nutrition density score indicates the nutrient content relative to calories.
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <div class="history-title">
+                    Recent Analysis
+                    <span class="clear-history" onclick="clearHistory()">Clear All</span>
+                </div>
+                <div id="historyList">
+                    <div class="empty-history">No analysis history yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'image';
+
+        // Initialize
+        
+
+        
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            if (tab === 'image') {
+                document.getElementById('imageTab').classList.add('active');
+            } else {
+                document.getElementById('textTab').classList.add('active');
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('previewImage');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function predictNutrition() {
+            if (currentTab === 'image') {
+                alert('Image-based extraction is not implemented yet. Please use the Text tab and fill the fields.');
+                return;
+            }
+
+            const btn = document.getElementById('predictBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Analyzing...';
+
+            // All nutrient field names
+            const fieldNames = [
+                'Caloric_Value','Carbohydrates','Sugars','Protein','Dietary_Fiber','Cholesterol','Sodium','Water',
+                'Vitamin_A','Vitamin_B1','Vitamin_B11','Vitamin_B12','Vitamin_B2','Vitamin_B3','Vitamin_B5','Vitamin_B6',
+                'Vitamin_C','Vitamin_D','Vitamin_E','Vitamin_K','Calcium','Copper','Iron','Magnesium','Manganese','Phosporus','Selenium','Zinc'
+            ];
+
+            // Build payload with ALL fields, defaulting to 0 if empty
+            const payload = {};
+            const mealName = document.getElementById('meal_name').value.trim();
+            payload.meal_name = mealName || 'Manual Entry';
+
+            // For each field, get value or default to 0
+            fieldNames.forEach(name => {
+                const el = document.getElementById(name);
+                if (el) {
+                    const v = el.value;
+                    if (v !== null && v !== undefined && v !== '') {
+                        const num = Number(v);
+                        payload[name] = !isNaN(num) ? num : 0;
+                    } else {
+                        payload[name] = 0; // Default to 0 for empty fields
+                    }
+                } else {
+                    payload[name] = 0; // Default to 0 if field doesn't exist
+                }
+            });
+
+            const token = localStorage.getItem('access_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err || 'Prediction request failed');
+                }
+                
+                const data = await res.json();
+                const densityScore = typeof data.prediction === 'number' ? data.prediction.toFixed(2) : 'N/A';
+
+                // Update main circle score
+                document.getElementById('mainScore').textContent = densityScore;
+                
+                // Update result section
+                document.getElementById('resultSection').style.display = 'block';
+                document.getElementById('densityScore').textContent = densityScore;
+
+                const badge = document.getElementById('sentimentBadge');
+                const scoreNum = parseFloat(densityScore);
+                
+                let sentimentText, sentimentClass;
+                if (!isNaN(scoreNum)) {
+                    if (scoreNum >= 80) {
+                        sentimentText = '✓ Excellent';
+                        sentimentClass = 'positive';
+                    } else if (scoreNum >= 65) {
+                        sentimentText = '~ Good';
+                        sentimentClass = 'neutral';
+                    } else {
+                        sentimentText = '✗ Poor';
+                        sentimentClass = 'negative';
+                    }
+                } else {
+                    sentimentText = 'N/A';
+                    sentimentClass = 'neutral';
+                }
+                
+                badge.textContent = sentimentText;
+                badge.className = 'sentiment-badge ' + sentimentClass;
+
+                // Reload history
+                await loadHistory();
+
+                // Scroll to result
+                document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (err) {
+                console.error('Prediction error', err);
+                alert('Prediction failed: ' + (err.message || err));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Analyze Nutrition Density';
+            }
+        }
+
+        async function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '<div class="loading">Loading history...</div>';
+
+            try {
+                const token = localStorage.getItem('access_token');
+                const headers = {};
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+
+                const res = await fetch('/meals', { headers });
+                
+                if (!res.ok) {
+                    console.warn('Could not load meals from server');
+                    historyList.innerHTML = '<div class="empty-history">No analysis history yet</div>';
+                    return;
+                }
+                
+                const meals = await res.json();
+                
+                if (!meals || meals.length === 0) {
+                    historyList.innerHTML = '<div class="empty-history">No analysis history yet</div>';
+                    return;
+                }
+
+                historyList.innerHTML = meals.map((meal, index) => {
+                    const score = typeof meal.prediction === 'number' ? meal.prediction.toFixed(2) : 'N/A';
+                    const date = new Date(meal.created_at).toLocaleString();
+                    
+                    return `
+                        <div class="history-item">
+                            <div class="history-main" onclick="toggleDetails(${index})">
+                                <div class="history-info">
+                                    <div class="history-name">${meal.meal_name || 'Unnamed Meal'}</div>
+                                    <div class="history-date">${date}</div>
+                                </div>
+                                <div class="history-score">${score}</div>
+                                <div class="expand-icon" id="expandIcon${index}">▼</div>
+                            </div>
+                            <div class="history-details" id="details${index}">
+                                <div class="nutrient-grid">
+                                    ${generateNutrientItems(meal)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (err) {
+                console.error('loadHistory error', err);
+                historyList.innerHTML = '<div class="empty-history">Failed to load history</div>';
+            }
+        }
+
+        function generateNutrientItems(meal) {
+            const nutrients = [
+                { label: 'Calories', key: 'Caloric_Value', unit: 'kcal' },
+                { label: 'Carbs', key: 'Carbohydrates', unit: 'g' },
+                { label: 'Sugars', key: 'Sugars', unit: 'g' },
+                { label: 'Protein', key: 'Protein', unit: 'g' },
+                { label: 'Fiber', key: 'Dietary_Fiber', unit: 'g' },
+                { label: 'Cholesterol', key: 'Cholesterol', unit: 'mg' },
+                { label: 'Sodium', key: 'Sodium', unit: 'mg' },
+                { label: 'Water', key: 'Water', unit: 'g' },
+                { label: 'Vit A', key: 'Vitamin_A', unit: 'IU' },
+                { label: 'Vit B1', key: 'Vitamin_B1', unit: 'mg' },
+                { label: 'Vit B11', key: 'Vitamin_B11', unit: 'mg' },
+                { label: 'Vit B12', key: 'Vitamin_B12', unit: 'mcg' },
+                { label: 'Vit B2', key: 'Vitamin_B2', unit: 'mg' },
+                { label: 'Vit B3', key: 'Vitamin_B3', unit: 'mg' },
+                { label: 'Vit B5', key: 'Vitamin_B5', unit: 'mg' },
+                { label: 'Vit B6', key: 'Vitamin_B6', unit: 'mg' },
+                { label: 'Vit C', key: 'Vitamin_C', unit: 'mg' },
+                { label: 'Vit D', key: 'Vitamin_D', unit: 'mcg' },
+                { label: 'Vit E', key: 'Vitamin_E', unit: 'mg' },
+                { label: 'Vit K', key: 'Vitamin_K', unit: 'mcg' },
+                { label: 'Calcium', key: 'Calcium', unit: 'mg' },
+                { label: 'Copper', key: 'Copper', unit: 'mg' },
+                { label: 'Iron', key: 'Iron', unit: 'mg' },
+                { label: 'Magnesium', key: 'Magnesium', unit: 'mg' },
+                { label: 'Manganese', key: 'Manganese', unit: 'mg' },
+                { label: 'Phosphorus', key: 'Phosporus', unit: 'mg' },
+                { label: 'Selenium', key: 'Selenium', unit: 'mcg' },
+                { label: 'Zinc', key: 'Zinc', unit: 'mg' }
+            ];
+
+            return nutrients
+                .filter(n => meal[n.key] !== undefined && meal[n.key] !== null && meal[n.key] !== 0)
+                .map(n => `
+                    <div class="nutrient-item">
+                        <span class="nutrient-label">${n.label}</span>
+                        <span class="nutrient-value">${meal[n.key]} ${n.unit}</span>
+                    </div>
+                `).join('') || '<div style="grid-column: 1/-1; text-align: center; color: #999;">No nutrient data available</div>';
+        }
+
+        function toggleDetails(index) {
+            const details = document.getElementById('details' + index);
+            const icon = document.getElementById('expandIcon' + index);
+            
+            if (details.classList.contains('show')) {
+                details.classList.remove('show');
+                icon.classList.remove('expanded');
+            } else {
+                details.classList.add('show');
+                icon.classList.add('expanded');
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                // Note: This only clears frontend display. 
+                // To delete from backend, you'd need a DELETE endpoint
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '<div class="empty-history">No analysis history yet</div>';
+                document.getElementById('mainScore').textContent = '--';
+            }
+        }
+    </script>
+</body>
+</html>

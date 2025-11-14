@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Calculator</title>
+    <style>
+        /* Same styles as login.html */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, lightblue, white);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .auth-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 50px auto;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid lightblue;
+            border-radius: 5px;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .auth-btn:hover {
+            background: #357abd;
+        }
+        .switch-auth {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #error-message, #success-message {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        text-align: center;
+    }
+    
+        #error-message {
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+            display: none;
+        }
+        
+        #success-message {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-box">
+        <h2>Register</h2>
+        <form id="registerForm" onsubmit="handleRegister(event)">
+            <input type="text" class="auth-input" id="username" placeholder="Username" required>
+            <input type="password" class="auth-input" id="password" placeholder="Password" required>
+            <button type="submit" class="auth-btn">Register</button>
+        </form>
+        <div id="error-message"></div>
+        <div id="success-message"></div>
+        <div class="switch-auth">
+            <a href="/static/login.html">Already have an account? Login</a>
+        </div>
+    </div>
+
+    <script>
+        async function handleRegister(event) {
+        event.preventDefault();
+        
+        // Clear previous messages
+        const errorDiv = document.getElementById('error-message');
+        const successDiv = document.getElementById('success-message');
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                switch (response.status) {
+                    case 400:
+                        errorDiv.textContent = data.detail;
+                        errorDiv.style.display = 'block';
+                        break;
+                    case 422:
+                        errorDiv.textContent = "Invalid input format";
+                        errorDiv.style.display = 'block';
+                        break;
+                    default:
+                        errorDiv.textContent = "Registration failed: " + (data.detail || "Unknown error");
+                        errorDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            // Registration successful
+            successDiv.textContent = 'Registration successful! Redirecting to login...';
+            successDiv.style.display = 'block';
+            
+            // Redirect after a short delay so user can see the success message
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        } catch (error) {
+            errorDiv.textContent = "Network error: " + error.message;
+            errorDiv.style.display = 'block';
+        }
+    }
+    </script>
+</body>
+</html>

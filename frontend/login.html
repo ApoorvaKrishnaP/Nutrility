@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Calculator</title>
+    <style>
+        /* Use same styles as your calculator, adding: */
+        .auth-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 50px auto;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid lightblue;
+            border-radius: 5px;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .auth-btn:hover {
+            background: #357abd;
+        }
+        .switch-auth {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        /* Message styles */
+        #error-message, #success-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        #error-message {
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+            display: none;
+        }
+        
+        #success-message {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-box">
+        <h2>Login</h2>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <input type="text" class="auth-input" id="username" placeholder="Username" required>
+            <input type="password" class="auth-input" id="password" placeholder="Password" required>
+            <button type="submit" class="auth-btn">Login</button>
+        </form>
+        <div id="error-message"></div>
+        <div id="success-message"></div>
+        <div class="switch-auth">
+            <a href="/">Don't have an account? Register</a>
+        </div>
+    </div>
+
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            // Clear previous messages
+            const errorDiv = document.getElementById('error-message');
+            const successDiv = document.getElementById('success-message');
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    errorDiv.textContent = error.detail || 'Login failed';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
+                const data = await response.json();
+                
+                // Show success message
+                successDiv.textContent = 'Login successful! Redirecting...';
+                successDiv.style.display = 'block';
+                
+                // Store token and username (use 'access_token' key expected by the app)
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('username', username);
+
+                // Redirect after a short delay to the app front page
+                setTimeout(() => {
+                    // index is served as a static file at /static/index.html
+                    window.location.href = '/static/index.html';
+                }, 800);
+            } catch (error) {
+                errorDiv.textContent = 'Network error: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
