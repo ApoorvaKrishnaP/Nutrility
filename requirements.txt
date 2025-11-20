@@ -9,3 +9,7 @@ python-multipart
 joblib
 numpy
 scikit-learn==1.6.1
+easyocr
+torch
+transformers
+xgboost

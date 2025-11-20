@@ -16,6 +16,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(predictor.router)
+
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 # Serve the HTML file

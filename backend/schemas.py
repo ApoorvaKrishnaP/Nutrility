@@ -10,6 +10,10 @@ class MealCreate(BaseModel):
     # All nutrient fields - Optional with None default
     Caloric_Value: Optional[float] = None
     Carbohydrates: Optional[float] = None
+    Fat:  Optional[float] = None 
+    Saturated_Fat:Optional[float] = None
+    Monounsaturated_Fat:Optional[float] = None
+    Polyunsaturated_Fat: Optional[float] = None
     Sugars: Optional[float] = None
     Protein: Optional[float] = None
     Dietary_Fiber: Optional[float] = None

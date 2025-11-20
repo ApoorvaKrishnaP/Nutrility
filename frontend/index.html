@@ -83,11 +83,15 @@
         }
 
         .content-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+}
+
 
         @media (max-width: 968px) {
             .content-wrapper {
@@ -572,100 +576,122 @@
                 reader.readAsDataURL(file);
             }
         }
-
-        async function predictNutrition() {
-            if (currentTab === 'image') {
-                alert('Image-based extraction is not implemented yet. Please use the Text tab and fill the fields.');
-                return;
-            }
-
-            const btn = document.getElementById('predictBtn');
-            btn.disabled = true;
-            btn.textContent = '⏳ Analyzing...';
+        const token = localStorage.getItem('access_token');
+        const headers= {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`  // ← CRITICAL: Include token
+                        };
+        // 1. Collect data from manual text input
+        async function collectManualData() {
+            const payload = {
+                meal_name: document.getElementById('meal_name').value.trim() || 'Manual Entry'
+            };
 
             const fieldNames = [
-                'Caloric_Value','Carbohydrates','Sugars','Protein','Dietary_Fiber','Cholesterol','Sodium','Water',
-                'Vitamin_A','Vitamin_B1','Vitamin_B11','Vitamin_B12','Vitamin_B2','Vitamin_B3','Vitamin_B5','Vitamin_B6',
-                'Vitamin_C','Vitamin_D','Vitamin_E','Vitamin_K','Calcium','Copper','Iron','Magnesium','Manganese','Phosporus','Selenium','Zinc'
+                'Caloric_Value','Carbohydrates','Sugars','Protein','Dietary_Fiber',
+                'Cholesterol','Sodium','Water',
+                'Vitamin_A','Vitamin_B1','Vitamin_B11','Vitamin_B12','Vitamin_B2','Vitamin_B3',
+                'Vitamin_B5','Vitamin_B6','Vitamin_C','Vitamin_D','Vitamin_E','Vitamin_K',
+                'Calcium','Copper','Iron','Magnesium','Manganese','Phosporus','Selenium','Zinc'
+                // Add Fat, Potassium, etc. later when backend supports
             ];
-
-            const payload = {};
-            const mealName = document.getElementById('meal_name').value.trim();
-            payload.meal_name = mealName || 'Manual Entry';
 
             fieldNames.forEach(name => {
                 const el = document.getElementById(name);
-                if (el) {
-                    const v = el.value;
-                    if (v !== null && v !== undefined && v !== '') {
-                        const num = Number(v);
-                        payload[name] = !isNaN(num) ? num : 0;
-                    } else {
-                        payload[name] = 0;
-                    }
-                } else {
-                    payload[name] = 0;
-                }
+                const val = el?.value.trim();
+                payload[name] = (val && !isNaN(val)) ? Number(val) : 0;
             });
 
-            const token = localStorage.getItem('access_token');
-            console.log(token);
-            const headers= {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${token}`  // ← CRITICAL: Include token
-  };
-            // if (token) headers['Authorization'] = 'Bearer ' + token;
+            return payload;
+        }
+        // 2. Collect data from image using OCR
+        async function collectImageData() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) throw new Error("No image selected");
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            
+
+            const res = await fetch('/img_to_text', {
+                method: 'POST',
+                headers,  // DON'T send Content-Type!
+                body: formData
+            });
+
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error("OCR failed: " + err);
+            }
+
+            const data = await res.json();
+
+            // Important: always have meal_name
+            return { meal_name: file.name.split('.')[0] || 'Scanned Label', ...data };
+        }
+        // 3. The ONE prediction function (this replaces your old one)
+        async function predictNutrition() {
+            const btn = document.getElementById('predictBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+
+            let payload;
+
 
             try {
+                if (currentTab === 'image') {
+                    btn.textContent = '🔄 Reading label...';
+                    payload = await collectImageData();
+                } else {
+                    payload = await collectManualData();
+                }
+
+                // Now send to prediction (same for both!)
+                btn.textContent = '🧠 Analyzing nutrients...';
+
+                
                 const res = await fetch('/predict', {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(payload)
                 });
-                
+
                 if (!res.ok) {
                     const err = await res.text();
-                    throw new Error(err || 'Prediction request failed');
+                    throw new Error(err || 'Prediction failed');
                 }
-                
-                const data = await res.json();
-                const densityScore = typeof data.prediction === 'number' ? data.prediction.toFixed(2) : 'N/A';
-                
+
+                const result = await res.json();
+
+                // Show result (same as before)
+                document.getElementById('densityScore').textContent = 
+                    typeof result.prediction === 'number' ? result.prediction.toFixed(1) : 'N/A';
+
                 document.getElementById('resultSection').style.display = 'block';
-                document.getElementById('densityScore').textContent = densityScore;
-
-                const badge = document.getElementById('sentimentBadge');
-                const scoreNum = parseFloat(densityScore);
-                
-                let sentimentText, sentimentClass;
-                if (!isNaN(scoreNum)) {
-                    if (scoreNum >= 80) {
-                        sentimentText = '✓ Excellent';
-                        sentimentClass = 'positive';
-                    } else if (scoreNum >= 65) {
-                        sentimentText = '~ Good';
-                        sentimentClass = 'neutral';
-                    } else {
-                        sentimentText = '✗ Poor';
-                        sentimentClass = 'negative';
-                    }
-                } else {
-                    sentimentText = 'N/A';
-                    sentimentClass = 'neutral';
-                }
-                
-                badge.textContent = sentimentText;
-                badge.className = 'sentiment-badge ' + sentimentClass;
-
                 document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
-                
+
+                // Badge logic (you already have this — copy it here)
+                updateSentimentBadge(result.prediction);
+
             } catch (err) {
-                console.error('Prediction error', err);
-                alert('Prediction failed: ' + (err.message || err));
+                alert(err.message || 'Something went wrong');
+                console.error(err);
             } finally {
                 btn.disabled = false;
                 btn.textContent = '🔍 Analyze Nutrition Density';
             }
+        }
+        function updateSentimentBadge(score) {
+            const badge = document.getElementById('sentimentBadge');
+            let text, cls;
+
+            if (score >= 80) { text = '✓ Excellent'; cls = 'positive'; }
+            else if (score >= 65) { text = '~ Good'; cls = 'neutral'; }
+            else { text = '✗ Poor'; cls = 'negative'; }
+
+            badge.textContent = text;
+            badge.className = 'sentiment-badge ' + cls;
         }
 
         async function loadHistory() {
